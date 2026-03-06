@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 #解决部分设备没有~/.Xauthority文件的问题
 if [ ! -f ~/.Xauthority ]; then
@@ -53,6 +52,8 @@ echo "[4/5] Install pyautogui and pyperclip from cloned repositories"
 python -m pip install "${REPO_1_DIR}" "${REPO_2_DIR}"
 
 echo "[5/5] Install requires python package"
+python -m pip install openpyxl
+python -m pip install pandas
 python -m pip install dogtail
 python -m pip install pytest
 python -m pip install allure-pytest

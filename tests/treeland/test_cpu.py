@@ -4,6 +4,7 @@
 :Author:suncui@uniontech.com
 :Date  :2023/9/1 下午1:52
 """
+import os
 import pandas as pd
 
 # 先执行test_cpu.sh脚本，生成~/top-cpu.txt文件
@@ -12,7 +13,8 @@ df = pd.DataFrame(columns=['treeland_cpu:%'])
 
 # 读取文本文件
 # 将~/top-cpu.txt文件拿过来放到当前目录下
-with open('~/top-cpu.txt', 'r') as file:
+in_file = os.path.expanduser('~/top-cpu.txt')
+with open(in_file, 'r') as file:
     lines = file.readlines()
 
 # 解析每一行并提取第9个字段的值
@@ -23,4 +25,5 @@ for line in lines:
         df.loc[len(df)] = [field9]
 
 # 保存为 Excel 文件
-df.to_excel('~/top-cpu-treeland.xlsx', index=False)
+out_file = os.path.expanduser('~/top-cpu-treeland.xlsx')
+df.to_excel(out_file, index=False)
