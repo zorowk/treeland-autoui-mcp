@@ -12,6 +12,9 @@ fi
 # install base package
 sudo apt-get update
 sudo apt-get install python3.12-venv
+sudo apt-get install wtype
+sudo apt-get install wayland-utils
+sudo apt-get install xdotool
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="${PROJECT_ROOT}/.venv"
@@ -19,8 +22,10 @@ TMP_BASE="$(mktemp -d /tmp/treeland-autotests-deps.XXXXXX)"
 
 REPO_1_URL="https://github.com/zorowk/pyautogui.git"
 REPO_2_URL="https://github.com/zorowk/pyperclip.git"
+REPO_3_URL="https://github.com/cjacker/wl-find-cursor.git"
 REPO_1_DIR="${TMP_BASE}/pyautogui"
 REPO_2_DIR="${TMP_BASE}/pyperclip"
+REPO_3_DIR="${TMP_BASE}/wl-find-cursor"
 
 cleanup() {
   if [[ "${KEEP_TMP:-0}" != "1" && -d "${TMP_BASE}" ]]; then
