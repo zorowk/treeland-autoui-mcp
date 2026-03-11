@@ -15,4 +15,10 @@ echo "Wayland environment variables have been set." >&2
 
 UID="$(id -u)"
 GID="$(id -g)"
-sudo ydotoold -p "${XDG_RUNTIME_DIR}/.ydotool_socket" -o "${UID}:${GID}" >/dev/null 2>&1 &
+touch_flag=()
+if command -v libinput >/dev/null 2>&1; then
+    if sudo libinput list-devices 2>/dev/null | grep -qi "Touchscreen"; then
+        touch_flag=(-T)
+    fi
+fi
+sudo ydotoold "${touch_flag[@]}" -p "${XDG_RUNTIME_DIR}/.ydotool_socket" -o "${UID}:${GID}" >/dev/null 2>&1 &

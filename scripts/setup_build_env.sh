@@ -19,6 +19,7 @@ sudo apt-get install -y grim
 sudo apt-get install -y wl-clipboard
 sudo apt-get install -y build-essential pkg-config
 sudo apt-get install -y cmake ninja-build
+sudo apt-get install -y libinput-tools
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="${PROJECT_ROOT}/.venv"
