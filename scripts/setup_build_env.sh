@@ -20,6 +20,9 @@ sudo apt-get install -y wl-clipboard
 sudo apt-get install -y build-essential pkg-config
 sudo apt-get install -y cmake ninja-build
 sudo apt-get install -y libinput-tools
+sudo apt-get install -y python3-pyatspi python3-gi gir1.2-atspi-2.0
+sudo apt-get install -y python3-dev python3-pip build-essential
+sudo apt-get install -y scdoc
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="${PROJECT_ROOT}/.venv"
@@ -120,12 +123,13 @@ echo "[6/7] Install pyautogui and pyperclip from cloned repositories"
 python -m pip install "${REPO_1_DIR}" "${REPO_2_DIR}"
 
 echo "[7/7] Install requires python package"
+pytyon -m pip install python3-pyatspi
 python -m pip install openpyxl
 python -m pip install pandas
 python -m pip install dogtail
 python -m pip install pytest
 python -m pip install allure-pytest
-python -m pip install allure-pyton-commons
+python -m pip install allure-python-commons
 
 if python - <<'PY'
 import pyatspi
