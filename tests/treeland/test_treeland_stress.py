@@ -4,13 +4,50 @@
 聚合了一些日常操作场景
 
 """
-import os
 import random
+import re
 import subprocess
 
 import pyautogui
 import datetime
 import time
+
+
+def _get_current_screen_size():
+    result = subprocess.run(['wlr-randr'], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"Unable to run wlr-randr: {result.stderr}")
+        return None, None
+
+    current_scale = 1.0
+    current_resolution = None
+
+    for line in result.stdout.splitlines():
+        line = line.strip()
+
+        if line.startswith("Scale:"):
+            try:
+                current_scale = float(line.split(":", 1)[1].strip())
+            except:
+                current_scale = 1.0
+            continue
+
+        if "current" in line and re.match(r'^\s*\d+x\d+', line):
+            res_match = re.match(r'^\s*(\d+)x(\d+)', line)
+            if res_match:
+                width = int(res_match.group(1))
+                height = int(res_match.group(2))
+                current_resolution = (width, height)
+                break
+
+    if not current_resolution:
+        print("Unable to find current resolution from wlr-randr.")
+        return None, None
+
+    return (
+        int(current_resolution[0] * current_scale),
+        int(current_resolution[1] * current_scale),
+    )
 
 
 def test_move_window():
@@ -24,9 +61,9 @@ def test_move_window():
         pyautogui.hotkey('down')
     pyautogui.press('enter')
     # 移动窗口
-    hd = os.popen('xrandr | grep current').read().split(',')[1]
-    x = hd.split(' ')[2]
-    y = hd.split(' ')[4]
+    x, y = _get_current_screen_size()
+    if x is None or y is None:
+        return
     star_t = datetime.datetime.now()
     end_t = datetime.datetime.now()
     while (end_t - star_t).seconds <= 5:
@@ -41,9 +78,9 @@ def test_move_window():
 
 def test_mouse_move():
     # 随机移动鼠标
-    hd = os.popen('xrandr | grep current').read().split(',')[1]
-    x = hd.split(' ')[2]
-    y = hd.split(' ')[4]
+    x, y = _get_current_screen_size()
+    if x is None or y is None:
+        return
     starttime = datetime.datetime.now()
     endtime = datetime.datetime.now()
     while (endtime - starttime).seconds <= 5:
