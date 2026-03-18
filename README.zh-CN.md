@@ -24,18 +24,26 @@ chmod +x scripts/setup_build_env.sh
 ### 2) 运行自动化测试
 
 ```bash
-# inputAccelProfile 必须设置为 1
+# inputAccelProfile 必须设置为 1（重要！！！）
 dde-dconfig set -a org.deepin.dde.treeland -r org.deepin.dde.treeland.user -s /uos -k inputAccelProfile -v 1
 source scripts/setup_run_env.sh
 source .venv/bin/activate.sh
+# 示例
 python pytest tests/treeland/test_tab_action.py
 ```
 
 ## 目录
 
 - `scripts/setup_build_env.sh`：一键引导测试环境
-- `script/desktop_demo.py`：示例测试，导入 `pyautogui`、`pyperclip`、`dogtail`
+- `source scripts/setup_run_env.sh` 一键部署测试运行环境
+- `tests`：uos 相关的测试场景
 
-## 备注
+## 故障排查
 
-- `dogtail` 依赖 Linux 辅助功能栈。如果导入或运行失败，请为你的发行版安装系统包（例如 `python3-gi`、`python3-pyatspi`、AT-SPI 相关包）。
+**问：** 为什么 `pyautogui` 移动坐标时会崩溃？
+**答：** 因为 libinput 的鼠标加速没有设置为 `flat`。默认是自适应模式（值为 `2`）。自动化测试需要将 `inputAccelProfile` 设置为 `flat`（值为 `1`）。同时确保 Treeland 合入了 [这个修复](https://github.com/linuxdeepin/treeland/pull/778/changes/9d04804fe24b9b1cf947f8ab250207cfe0bec9ca)。
+
+## 相关库修改
+
+- [wl-find-cursor](https://github.com/zorowk/wl-find-cursor)：[修复安装报错](https://github.com/zorowk/wl-find-cursor/commit/512b9bf9cb7af94059c54d14b3e319ed6c794f9d)
+- [pyautogui](https://github.com/zorowk/pyautogui)：[修复 alt/altleft/altright 键 code 映射错误](https://github.com/zorowk/pyautogui/commit/bb4319499eeac2c2df68cb750ba614cb6ea5543c)，[新增对 win/winleft/winright 键映射的支持](https://github.com/KavyanshKhaitan2/pyautogui/commit/28f3a41df4456eaf23daae6542d27a13d7d325a7)
