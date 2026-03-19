@@ -50,6 +50,10 @@ python pytest tests/treeland/test_tab_action.py
 
 **答：** 提前在测试的桌面环境中运行evdev， 可以看到测试脚本发送的移动鼠标事件或者快捷键序列。
 
+**问：** github上的pyautogui，pyperclip项目无法拉取下来
+
+**答：** source .venv/bin/activate切换到python虚拟环境，然后手动下载安装一次即可
+
 ## 相关库修改
 
 - [wl-find-cursor](https://github.com/zorowk/wl-find-cursor)：[修复安装报错](https://github.com/zorowk/wl-find-cursor/commit/512b9bf9cb7af94059c54d14b3e319ed6c794f9d)
