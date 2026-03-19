@@ -46,7 +46,7 @@ python pytest tests/treeland/test_tab_action.py
 
 自动化测试需要将 `inputAccelProfile` 设置为 `flat`（值为 `1`）。同时确保 Treeland 合入了 [这个修复](https://github.com/linuxdeepin/treeland/pull/778/changes/9d04804fe24b9b1cf947f8ab250207cfe0bec9ca)。
 
-**问：** 如何查看tests中运行的python脚本发送的坐标，快捷键时候正确
+**问：** 如何查看tests中运行的python脚本发送的坐标，快捷键是否正确
 
 **答：** 提前在测试的桌面环境中运行evdev， 可以看到测试脚本发送的移动鼠标事件或者快捷键序列。
 
