@@ -44,7 +44,7 @@ python pytest tests/treeland/test_tab_action.py
 
 **答：** 因为 libinput 的鼠标加速没有设置为 `flat`。默认是自适应模式（值为 `2`）。
 
-自动化测试需要将 `inputAccelProfile` 设置为 `flat`（值为 `1`）。同时确保 Treeland 合入了 [这个修复](https://github.com/linuxdeepin/treeland/pull/778/changes/9d04804fe24b9b1cf947f8ab250207cfe0bec9ca)。
+自动化测试需要将 `inputAccelProfile` 设置为 `flat`（值为 `1`）。同时确保 Treeland 合入了 [WIP:Virtualinput pointer and keyboard](https://github.com/linuxdeepin/treeland/pull/778)。
 
 **问：** 如何查看tests中运行的python脚本发送的坐标，快捷键是否正确
 
