@@ -43,7 +43,10 @@ python pytest tests/treeland/test_tab_action.py
 ## Troubleshooting
 
 **Q:** Why does `pyautogui` crash when moving the cursor?
-**A:** This happens when libinput mouse acceleration is not set to `flat`. The default is adaptive (value `2`). For automated tests, set `inputAccelProfile` to `flat` (value `1`). Also ensure Treeland includes [this fix](https://github.com/linuxdeepin/treeland/pull/778/changes/9d04804fe24b9b1cf947f8ab250207cfe0bec9ca).
+
+**A:** This happens when libinput mouse acceleration is not set to `flat`. The default is adaptive (value `2`).
+
+For automated tests, set `inputAccelProfile` to `flat` (value `1`). Also ensure Treeland includes [this fix](https://github.com/linuxdeepin/treeland/pull/778/changes/9d04804fe24b9b1cf947f8ab250207cfe0bec9ca).
 
 ## Related Library Changes
 
