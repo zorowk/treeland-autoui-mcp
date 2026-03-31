@@ -2,6 +2,91 @@
 
 treeland 自动化测试基础（Python）
 
+## A/B 端远程 AI 控制（gRPC）
+
+本仓库新增一套“AI 控制端(A) + 目标测试机(B)”的远程控制流程，参考 omniparser-autogui-mcp 的思路，将截图解析与操作执行拆分到两台机器。
+
+### 总体流程
+
+1. 机器 A 通过 gRPC 拉取机器 B 的截图
+2. 机器 A 使用 OmniParser 解析 UI 元素，生成结构化列表
+3. AI Agent 决策（例如“点击 #1”）
+4. 机器 A 通过 gRPC 下发动作到机器 B
+5. 机器 B 使用 pyautogui 执行鼠标/键盘操作
+
+### 子模块
+
+```
+git submodule update --init --recursive
+```
+
+### 机器 B（目标测试机）部署
+
+1) 环境准备（你已有的 `client_env.sh` 可继续使用）
+2) 安装额外依赖
+
+```bash
+python -m pip install -r requirements_client.txt
+```
+
+3) 启动 gRPC 服务（Wayland + grim）
+
+```bash
+export TREELAND_RPC_TOKEN="your-strong-token"
+export TREELAND_RPC_HOST="0.0.0.0"
+export TREELAND_RPC_PORT="50051"
+python -m remote.server
+```
+
+> 需要系统已安装 `grim`（Wayland 截图）。
+
+### 机器 A（AI 控制端）部署
+
+1) 安装依赖
+
+```bash
+python -m pip install -r requirements_ai.txt
+```
+
+2) 设置环境变量并启动 MCP
+
+```bash
+export TREELAND_RPC_ADDR="B_IP:50051"
+export TREELAND_RPC_TOKEN="your-strong-token"
+python -m ai_controller.mcp_remote_autogui
+```
+
+> 如需使用远程 OmniParser 服务，可设置 `OMNI_PARSER_SERVER` 为解析接口地址，例如 `http://IP:PORT/parse/`。
+> 可选：`OMNI_PARSER_SERVER_IMAGE_KEY`（默认 `image`）、`OMNI_PARSER_SERVER_BBOX`（如 `xyxy`）。
+
+### 快速验证
+
+在 A 端运行：
+
+```bash
+python -m remote.client screenshot ./screen.png
+```
+
+如果能拉取到 B 的截图并保存，表示通信与鉴权正常。
+
+### 运行过程监控（定时刷新 + 16fps 默认）
+
+发送指令后可在 A 端使用监控工具定时刷新界面，截图交给 OmniParser 标记后返回给 AI 判断是否有错误。
+
+```python
+# 监控 3 秒，默认 16fps
+omniparser_watch(duration_s=3.0, fps=16)
+
+# 监控 5 秒，每帧都返回标注图
+omniparser_watch(duration_s=5.0, fps=16, include_images=True, max_frames=32)
+```
+
+参数说明：
+- `duration_s`：监控时长（秒）
+- `fps`：刷新频率（默认 16）
+- `include_images`：是否返回每帧标注图（默认仅返回最后一帧）
+- `max_frames`：最大帧数（超出会自动降采样）
+
 ## 快速开始
 
 ### 1) 准备 Python 环境
