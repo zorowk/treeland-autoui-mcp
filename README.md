@@ -9,7 +9,7 @@ treeland 自动化测试基础（Python）
 ### 总体流程
 
 1. 机器 A 通过 gRPC 拉取机器 B 的截图
-2. 机器 A 使用 OmniParser 解析 UI 元素，生成结构化列表
+2. 机器 A 将截图发送到云端 OmniParser `/parse/` 解析 UI 元素
 3. AI Agent 决策（例如“点击 #1”）
 4. 机器 A 通过 gRPC 下发动作到机器 B
 5. 机器 B 使用 pyautogui 执行鼠标/键盘操作
@@ -51,7 +51,8 @@ export OMNI_PARSER_SERVER="http://OMNIPARSER_IP:8000"
 python -m ai_controller.mcp_remote_autogui
 ```
 
-> `OMNI_PARSER_SERVER` 为 OmniParser 服务地址（不包含 `/parse/`，例如 `http://IP:8000`）。
+> `OMNI_PARSER_SERVER` 为云端 OmniParser 服务地址（不包含 `/parse/`，例如 `http://CLOUD_IP:8000`）。
+> OmniParser 在云端服务器部署，仅通过 HTTP `/parse/` 提供解析能力。
 
 ### 快速验证
 
@@ -72,6 +73,7 @@ python -m remote.client screenshot ./screen.png
 - `treeland_drags`：拖拽
 - `treeland_input_key`：快捷键
 - `treeland_write`：文本输入
+- `treeland_scroll`：滚动
 - `treeland_exec`：在目标机 B 执行命令（支持超时，默认返回 stdout/stderr/exit_code/duration_ms）
 
 

@@ -3,6 +3,7 @@
 This document describes how to deploy on:
 - **Machine B** (target test machine)
 - **Machine A** (AI control machine)
+- **Machine C** (cloud OmniParser server)
 
 And provides test methods for each interface.
 
@@ -57,6 +58,17 @@ python -m ai_controller.mcp_remote_autogui
 ## 3) Interface Tests
 
 All tests are executed from **Machine A** unless otherwise noted.
+
+### 3.0 OmniParser cloud server health check (Machine C)
+
+From any machine that can reach the cloud server:
+
+```bash
+curl -s http://OMNIPARSER_IP:8000/probe/
+```
+
+Expected:
+- JSON response like `{"message":"Omniparser API ready"}`
 
 ### 3.1 gRPC connectivity test (screenshot)
 

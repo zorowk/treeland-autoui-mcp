@@ -9,7 +9,7 @@ treeland auto test base python
 This repo includes a remote control flow inspired by omniparser-autogui-mcp, split across two machines:
 
 1. Machine A pulls screenshots from Machine B via gRPC
-2. Machine A runs OmniParser to detect UI elements
+2. Machine A sends the screenshot to cloud OmniParser `/parse/` to detect UI elements
 3. AI Agent decides actions (e.g. “click #1”)
 4. Machine A sends action commands to Machine B
 5. Machine B executes actions with pyautogui
@@ -51,7 +51,8 @@ export OMNI_PARSER_SERVER="http://OMNIPARSER_IP:8000"
 python -m ai_controller.mcp_remote_autogui
 ```
 
-> `OMNI_PARSER_SERVER` is the OmniParser base URL (no `/parse/`), e.g. `http://IP:8000`.
+> `OMNI_PARSER_SERVER` is the cloud OmniParser base URL (no `/parse/`), e.g. `http://CLOUD_IP:8000`.
+> OmniParser runs on a cloud server and only provides HTTP `/parse/` for parsing.
 
 ### Quick check
 
@@ -72,6 +73,7 @@ If it saves a screenshot, gRPC auth and connectivity are working.
 - `treeland_drags`: drag
 - `treeland_input_key`: hotkeys
 - `treeland_write`: text input
+- `treeland_scroll`: scroll
 - `treeland_exec`: run command on target machine B (timeout; returns stdout/stderr/exit_code/duration_ms)
 
 
