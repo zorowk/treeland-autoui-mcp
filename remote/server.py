@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import grpc
 
-from remote import actions, auth, screenshot
+from remote import actions, auth, exec_cmd, screenshot
 from remote.proto_loader import load_proto_modules
 
 
@@ -50,6 +50,12 @@ def serve() -> None:
         def GetKeys(self, request, context):
             auth.require_auth(context)
             return pb2.KeysList(keys=list(actions.keyboard_keys()))
+
+        def Exec(self, request, context):
+            auth.require_auth(context)
+            timeout_s = request.timeout_s if request.timeout_s > 0 else 10
+            stdout, stderr, code, duration_ms = exec_cmd.run(request.command, timeout_s=timeout_s)
+            return pb2.ExecResponse(stdout=stdout, stderr=stderr, exit_code=code, duration_ms=duration_ms)
 
         def Drag(self, request, context):
             auth.require_auth(context)

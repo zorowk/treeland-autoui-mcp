@@ -69,23 +69,17 @@ python -m remote.client screenshot ./screen.png
 
 If it saves a screenshot, gRPC auth and connectivity are working.
 
-### Runtime Monitoring (periodic refresh, default 16fps)
+### Minimal MCP Tools (orchestration handled upstream)
 
-After sending commands, you can refresh the UI periodically and let OmniParser label each frame for AI error checks.
+- `omniparser_screenshot`: capture raw screenshot
+- `omniparser_parse_last`: parse + label last screenshot (`output_level=text|image|both`)
+- `omniparser_click`: mouse click (`clicks=2` for double-click)
+- `omniparser_mouse_move`: move mouse
+- `omniparser_drags`: drag
+- `omniparser_input_key`: hotkeys
+- `omniparser_write`: text input
+- `omniparser_exec`: run command on target machine B (timeout; returns stdout/stderr/exit_code/duration_ms)
 
-```python
-# Watch for 3 seconds, default 16fps
-omniparser_watch(duration_s=3.0, fps=16)
-
-# Watch for 5 seconds, return labeled images for every frame
-omniparser_watch(duration_s=5.0, fps=16, include_images=True, max_frames=32)
-```
-
-Parameters:
-- `duration_s`: total watch time (seconds)
-- `fps`: refresh rate (default 16)
-- `include_images`: return labeled image for each frame (default returns only the last one)
-- `max_frames`: cap total frames (auto downsample when exceeded)
 
 ## Quick start
 

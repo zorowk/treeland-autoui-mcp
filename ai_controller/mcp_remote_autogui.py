@@ -21,6 +21,7 @@ SCREEN_WIDTH = 0
 SCREEN_HEIGHT = 0
 CURRENT_MOUSE_X = 0
 CURRENT_MOUSE_Y = 0
+LAST_SCREENSHOT: bytes | None = None
 
 
 def _repo_root() -> Path:
@@ -102,30 +103,41 @@ def register_tools(mcp: FastMCP) -> None:
     remote = RemoteClient()
 
     @mcp.tool()
-    def omniparser_details_on_screen():
-        """Capture remote screen, parse UI elements, return detail list and annotated image."""
-        global DETAIL_LIST, SCREEN_WIDTH, SCREEN_HEIGHT
+    def omniparser_screenshot():
+        """Capture remote screen and return the raw screenshot."""
+        global SCREEN_WIDTH, SCREEN_HEIGHT, LAST_SCREENSHOT
         png_bytes, width, height = remote.get_screenshot()
         SCREEN_WIDTH = width
         SCREEN_HEIGHT = height
+        LAST_SCREENSHOT = png_bytes
+        return MCPImage(data=png_bytes, format="png")
+
+    @mcp.tool()
+    def omniparser_parse_last(output_level: str = "both"):
+        """Parse and label the last screenshot. output_level: text|image|both."""
+        global DETAIL_LIST
+        if LAST_SCREENSHOT is None:
+            return "no screenshot available"
 
         if omniparser_server:
-            dino_labeled_img, detail = _parse_with_server(omniparser_server, png_bytes)
+            dino_labeled_img, detail = _parse_with_server(omniparser_server, LAST_SCREENSHOT)
         else:
             if omniparser is None:
                 raise RuntimeError("OmniParser not initialized")
-            dino_labeled_img, detail = _parse_local(omniparser, png_bytes)
+            dino_labeled_img, detail = _parse_local(omniparser, LAST_SCREENSHOT)
 
         DETAIL_LIST = detail
         detail_text = _detail_text(detail)
-        return [
-            detail_text,
-            MCPImage(data=base64.b64decode(dino_labeled_img), format="png"),
-        ]
+        output_level = output_level.lower()
+        if output_level == "text":
+            return detail_text
+        if output_level == "image":
+            return MCPImage(data=base64.b64decode(dino_labeled_img), format="png")
+        return [detail_text, MCPImage(data=base64.b64decode(dino_labeled_img), format="png")]
 
     @mcp.tool()
     def omniparser_click(idx: int, button: str = "left", clicks: int = 1):
-        """Click UI element by index from details_on_screen."""
+        """Click UI element by index from parse result (set clicks=2 for double-click)."""
         global CURRENT_MOUSE_X, CURRENT_MOUSE_Y
         if idx < 0 or idx >= len(DETAIL_LIST):
             return "invalid index"
@@ -196,54 +208,21 @@ def register_tools(mcp: FastMCP) -> None:
         return f"waited {seconds}s"
 
     @mcp.tool()
-    def omniparser_watch(duration_s: float = 2.0, fps: int = 16, include_images: bool = False, max_frames: int = 32):
-        """Periodically refresh screen, parse UI elements, and return summaries for AI error checks."""
-        if fps <= 0:
-            return "invalid fps"
-        if duration_s <= 0:
-            return "invalid duration"
-        if max_frames <= 0:
-            return "invalid max_frames"
-
-        interval = 1.0 / fps
-        total_frames = max(1, int(duration_s * fps))
-        if total_frames > max_frames:
-            total_frames = max_frames
-            interval = duration_s / total_frames
-
-        summaries: list[str] = []
-        images: list[MCPImage] = []
-        for i in range(total_frames):
-            start = time.monotonic()
-            png_bytes, width, height = remote.get_screenshot()
-
-            if omniparser_server:
-                dino_labeled_img, detail = _parse_with_server(omniparser_server, png_bytes)
-            else:
-                if omniparser is None:
-                    return "OmniParser not initialized"
-                dino_labeled_img, detail = _parse_local(omniparser, png_bytes)
-
-            summary = _detail_text(detail)
-            summaries.append(f"[frame {i + 1}/{total_frames}] {width}x{height}\n{summary}")
-
-            if include_images:
-                images.append(MCPImage(data=base64.b64decode(dino_labeled_img), format="png"))
-
-            elapsed = time.monotonic() - start
-            sleep_s = interval - elapsed
-            if sleep_s > 0:
-                time.sleep(sleep_s)
-
-        result: list[Any] = ["\n\n".join(summaries)]
-        if include_images:
-            result.extend(images)
-        else:
-            # return last frame image by default for inspection
-            last_img = dino_labeled_img if "dino_labeled_img" in locals() else None
-            if last_img:
-                result.append(MCPImage(data=base64.b64decode(last_img), format="png"))
-        return result
+    def omniparser_exec(command: str, timeout_s: int = 10, output_level: str = "all"):
+        """Run a shell command on remote machine B. output_level: all|stdout|status."""
+        resp = remote.exec(command, timeout_s=timeout_s)
+        output_level = output_level.lower()
+        payload = {
+            "stdout": resp.stdout,
+            "stderr": resp.stderr,
+            "exit_code": resp.exit_code,
+            "duration_ms": resp.duration_ms,
+        }
+        if output_level == "stdout":
+            return resp.stdout
+        if output_level == "status":
+            return {"exit_code": resp.exit_code, "duration_ms": resp.duration_ms}
+        return payload
 
 
 def main() -> None:

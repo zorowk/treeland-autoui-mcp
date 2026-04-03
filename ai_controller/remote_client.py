@@ -28,6 +28,10 @@ class RemoteClient:
         resp = self._stub.GetKeys(self._pb2.Empty(), metadata=self._metadata())
         return list(resp.keys)
 
+    def exec(self, command: str, timeout_s: int = 10):
+        req = self._pb2.ExecRequest(command=command, timeout_s=timeout_s)
+        return self._stub.Exec(req, metadata=self._metadata())
+
     def click(self, x: int, y: int, button: str = "left", clicks: int = 1) -> None:
         req = self._pb2.ClickRequest(x=x, y=y, button=button, clicks=clicks)
         self._stub.Click(req, metadata=self._metadata())

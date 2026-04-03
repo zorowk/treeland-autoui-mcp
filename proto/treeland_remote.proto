@@ -49,6 +49,18 @@ message KeysList {
   repeated string keys = 1;
 }
 
+message ExecRequest {
+  string command = 1;
+  int32 timeout_s = 2;
+}
+
+message ExecResponse {
+  string stdout = 1;
+  string stderr = 2;
+  int32 exit_code = 3;
+  int64 duration_ms = 4;
+}
+
 message Ack {
   bool ok = 1;
   string message = 2;
@@ -57,6 +69,7 @@ message Ack {
 service RemoteControl {
   rpc GetScreenshot(Empty) returns (ScreenshotResponse);
   rpc GetKeys(Empty) returns (KeysList);
+  rpc Exec(ExecRequest) returns (ExecResponse);
   rpc Click(ClickRequest) returns (Ack);
   rpc Drag(DragRequest) returns (Ack);
   rpc Type(TypeRequest) returns (Ack);

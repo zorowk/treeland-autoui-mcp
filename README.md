@@ -69,23 +69,17 @@ python -m remote.client screenshot ./screen.png
 
 如果能拉取到 B 的截图并保存，表示通信与鉴权正常。
 
-### 运行过程监控（定时刷新 + 16fps 默认）
+### MCP 最小工具集（编排交给上层）
 
-发送指令后可在 A 端使用监控工具定时刷新界面，截图交给 OmniParser 标记后返回给 AI 判断是否有错误。
+- `omniparser_screenshot`：抓取原始截图
+- `omniparser_parse_last`：解析并标注最近一次截图（可选 `output_level=text|image|both`）
+- `omniparser_click`：鼠标点击（`clicks=2` 为双击）
+- `omniparser_mouse_move`：鼠标移动
+- `omniparser_drags`：拖拽
+- `omniparser_input_key`：快捷键
+- `omniparser_write`：文本输入
+- `omniparser_exec`：在目标机 B 执行命令（支持超时，默认返回 stdout/stderr/exit_code/duration_ms）
 
-```python
-# 监控 3 秒，默认 16fps
-omniparser_watch(duration_s=3.0, fps=16)
-
-# 监控 5 秒，每帧都返回标注图
-omniparser_watch(duration_s=5.0, fps=16, include_images=True, max_frames=32)
-```
-
-参数说明：
-- `duration_s`：监控时长（秒）
-- `fps`：刷新频率（默认 16）
-- `include_images`：是否返回每帧标注图（默认仅返回最后一帧）
-- `max_frames`：最大帧数（超出会自动降采样）
 
 ## 快速开始
 
