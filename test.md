@@ -46,13 +46,32 @@ python -m remote.server
 python -m pip install -r requirements_ai.txt
 ```
 
-### 2.2 Start MCP tools
+### 2.2 Configure OpenCode (auto-start MCP)
+
+Create `opencode.json` in the project root:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "treeland": {
+      "type": "local",
+      "command": ["python", "-m", "ai_controller.mcp_remote_autogui"],
+      "enabled": true,
+      "environment": {
+        "TREELAND_RPC_ADDR": "B_IP:50051",
+        "TREELAND_RPC_TOKEN": "your-strong-token",
+        "OMNI_PARSER_SERVER": "http://OMNIPARSER_IP:8000"
+      }
+    }
+  }
+}
+```
+
+Then start OpenCode:
 
 ```bash
-export TREELAND_RPC_ADDR="B_IP:50051"
-export TREELAND_RPC_TOKEN="your-strong-token"
-export OMNI_PARSER_SERVER="http://OMNIPARSER_IP:8000"
-python -m ai_controller.mcp_remote_autogui
+opencode
 ```
 
 ## 3) Interface Tests
@@ -82,73 +101,68 @@ Expected:
 - `screen.png` is saved
 - output prints resolution
 
-### 3.2 MCP: screenshot + parse
+### 3.2 OpenCode: screenshot + parse
 
-In your MCP/agent environment, call:
+In OpenCode chat, ask:
 
-```python
-treeland_screenshot()
-omniparser_parse_last(output_level="both")
+```
+Use treeland_screenshot, then call omniparser_parse_last with output_level="both".
 ```
 
 Expected:
 - Returns labeled UI elements text
 - Returns labeled image
 
-### 3.3 MCP: mouse click / double-click
+### 3.3 OpenCode: mouse click / double-click
 
-```python
-treeland_click(0, clicks=1)
-treeland_click(0, clicks=2)
+```
+Click element 0 with treeland_click (clicks=1), then double-click it (clicks=2).
 ```
 
 Expected:
 - Single or double click on element index `0`
 
-### 3.4 MCP: mouse move + drag
+### 3.4 OpenCode: mouse move + drag
 
-```python
-treeland_mouse_move(0)
-treeland_drags(0, 1)
+```
+Move to element 0 with treeland_mouse_move, then drag from 0 to 1 using treeland_drags.
 ```
 
 Expected:
 - Cursor moves to element `0`
 - Drag from element `0` to `1`
 
-### 3.5 MCP: keyboard hotkeys
+### 3.5 OpenCode: keyboard hotkeys
 
-```python
-treeland_input_key("ctrl", "l")
-treeland_input_key("ctrl", "shift", "t")
+```
+Send hotkey ctrl+l, then ctrl+shift+t using treeland_input_key.
 ```
 
 Expected:
 - Browser focus URL bar / reopen last tab (depends on active app)
 
-### 3.6 MCP: text input
+### 3.6 OpenCode: text input
 
-```python
-treeland_write("hello world")
+```
+Type "hello world" using treeland_write.
 ```
 
 Expected:
 - Text typed at current focus
 
-### 3.7 MCP: scroll
+### 3.7 OpenCode: scroll
 
-```python
-treeland_scroll(5, direction="down")
+```
+Scroll down by 5 using treeland_scroll.
 ```
 
 Expected:
 - Page scrolls down
 
-### 3.8 MCP: remote command execution (Machine B)
+### 3.8 OpenCode: remote command execution (Machine B)
 
-```python
-treeland_exec("uname -a", timeout_s=5, output_level="all")
-treeland_exec("sleep 2; echo ok", timeout_s=1, output_level="all")
+```
+Run treeland_exec("uname -a", timeout_s=5, output_level="all"), then treeland_exec("sleep 2; echo ok", timeout_s=1, output_level="all").
 ```
 
 Expected:
