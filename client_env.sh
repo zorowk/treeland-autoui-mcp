@@ -35,6 +35,10 @@ REPO_4_URL="https://github.com/ReimuNotMoe/ydotool.git"
 REPO_3_DIR="${TMP_BASE}/wl-find-cursor"
 REPO_4_DIR="${TMP_BASE}/ydotool"
 
+# uv index mirrors
+export UV_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple/"
+export UV_EXTRA_INDEX_URL="https://mirrors.aliyun.com/pypi/simple/"
+
 cleanup() {
   if [[ "${KEEP_TMP:-0}" != "1" && -d "${TMP_BASE}" ]]; then
     rm -rf "${TMP_BASE}"

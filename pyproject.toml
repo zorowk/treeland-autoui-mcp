@@ -31,8 +31,6 @@ dependencies = [
     "streamlit>=1.38.0",
     "supervision==0.18.0",
     "timm>=1.0.14",
-    "torch>=2.6.0",
-    "torchvision>=0.21.0",
     "transformers>=4.49.0",
     "uiautomation>=2.0.20",
     "ultralytics==8.3.70",
@@ -71,16 +69,5 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-torch = [
-  { index = "pytorch-cu118", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-]
-torchvision = [
-  { index = "pytorch-cu118", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-]
 langchain-mcp = { git = "https://github.com/NON906/langchain-mcp.git", branch = "main" }
 pyautogui = { git = "https://github.com/zorowk/pyautogui.git" }
-
-[[tool.uv.index]]
-name = "pytorch-cu118"
-url = "https://download.pytorch.org/whl/cu118"
-explicit = true
