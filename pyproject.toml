@@ -24,7 +24,6 @@ dependencies = [
     "paddleocr>=2.9.1",
     "paddlepaddle>=2.6.2",
     "pre-commit==3.8.0",
-    "pyautogui==0.9.54",
     "pytest==8.3.3",
     "pytest-asyncio==0.23.6",
     "ruff==0.6.7",
@@ -79,6 +78,7 @@ torchvision = [
   { index = "pytorch-cu118", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 langchain-mcp = { git = "https://github.com/NON906/langchain-mcp.git", branch = "main" }
+pyautogui = { git = "https://github.com/zorowk/pyautogui.git" }
 
 [[tool.uv.index]]
 name = "pytorch-cu118"
