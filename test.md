@@ -16,7 +16,7 @@ uv sync
 ### 1.2 Start MCP server (SSE)
 
 ```bash
-SSE_HOST=0.0.0.0 SSE_PORT=8000 uv run omniparser-autogui-mcp
+SSE_HOST=0.0.0.0 SSE_PORT=8000 uv run treeland-autogui-mcp
 ```
 
 Notes:
@@ -25,7 +25,13 @@ Notes:
 
 ## 2) Control Machine (LangChain agent)
 
-### 2.1 Configure remote MCP endpoints
+### 2.1 Install dependencies
+
+```bash
+uv sync --extra langchain
+```
+
+### 2.2 Configure remote MCP endpoints
 
 Use the multi-machine template:
 
@@ -50,7 +56,7 @@ Edit `langchain_settings/mcp_config.json`:
 }
 ```
 
-### 2.2 Run the LangChain agent
+### 2.3 Run the LangChain agent
 
 ```bash
 python langchain_example.py

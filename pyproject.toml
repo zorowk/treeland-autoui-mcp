@@ -42,4 +42,4 @@ build-backend = "hatchling.build"
 
 [tool.uv.sources]
 langchain-mcp = { git = "https://github.com/NON906/langchain-mcp.git", branch = "main" }
-pyautogui = { git = "https://github.com/zorowk/pyautogui.git" }
+pyautogui = { git = "https://github.com/zorowk/pyautogui.git", branch = "master" }

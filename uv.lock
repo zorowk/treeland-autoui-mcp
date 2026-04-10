@@ -1533,7 +1533,7 @@ wheels = [
 [[package]]
 name = "pyautogui"
 version = "0.9.54"
-source = { git = "https://github.com/zorowk/pyautogui.git#28f3a41df4456eaf23daae6542d27a13d7d325a7" }
+source = { git = "https://github.com/zorowk/pyautogui.git?branch=master#28f3a41df4456eaf23daae6542d27a13d7d325a7" }
 dependencies = [
     { name = "pillow" },
     { name = "pyscreenshot" },
@@ -2234,7 +2234,7 @@ requires-dist = [
     { name = "langgraph", marker = "extra == 'langchain'" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.3.0" },
     { name = "pillow", specifier = ">=10.4.0" },
-    { name = "pyautogui", git = "https://github.com/zorowk/pyautogui.git" },
+    { name = "pyautogui", git = "https://github.com/zorowk/pyautogui.git?branch=master" },
     { name = "pygetwindow", specifier = ">=0.0.9" },
     { name = "pyperclip", specifier = ">=1.9.0" },
     { name = "python-dotenv", marker = "extra == 'langchain'", specifier = ">=1.0.1" },

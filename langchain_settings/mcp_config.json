@@ -8,7 +8,8 @@
       ],
       "env": {
         "SSE_HOST": "0.0.0.0",
-        "SSE_PORT": "8651"
+        "SSE_PORT": "8651",
+        "OMNI_PARSER_SERVER": "100.86.114.106:8000"
       }
     }
   }
