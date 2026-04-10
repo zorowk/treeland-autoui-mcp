@@ -77,36 +77,16 @@ install_ydotool() {
   )
 }
 
-should_install_ydotool() {
-  case "${AUTO_INSTALL_YDOTOOL:-}" in
-    1|true|yes|y) return 0 ;;
-    0|false|no|n) return 1 ;;
-  esac
-
-  if [[ -t 0 ]]; then
-    read -r -p "Install ydotool from source now? [y/N] " reply
-    [[ "${reply}" =~ ^[Yy]$ ]]
-    return $?
-  fi
-
-  echo "AUTO_INSTALL_YDOTOOL is not set and stdin is not a TTY; skipping ydotool install."
-  return 1
-}
-
 echo "[1/7] Install wl-find-cursor (system-wide)"
 install_wl_find_cursor
 
 echo "[2/7] Optional ydotool install"
-if should_install_ydotool; then
-  install_ydotool
-else
-  echo "Skipping ydotool install."
-fi
+install_ydotool
 
 echo "[3/7] Install uv"
 
 export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
-if command -v uv >/dev/null 2>&1; then
+if ! command -v uv >/dev/null 2>&1; then
     curl -LsSf https://astral.sh/uv/install.sh | sh
     command -v uv >/dev/null 2>&1 || {
         echo "uv install failed. Ensure ~/.cargo/bin or ~/.local/bin is in PATH." >&2
@@ -114,14 +94,7 @@ if command -v uv >/dev/null 2>&1; then
     }
 fi
 
-echo "[4/7] Create python virtual environment: ${VENV_DIR}"
-uv --clear venv "${VENV_DIR}" --clear
-
-echo "[5/7] Activate venv"
-# shellcheck disable=SC1091
-source "${VENV_DIR}/bin/activate"
-
-echo "[6/7] Install python dependencies via uv"
+echo "[4/7] Install python dependencies via uv"
 uv sync
 
 if python - <<'PY'
@@ -175,7 +148,7 @@ else
     echo "ydotoold already running; skipping start." >&2
 fi
 
-;; 启动treeland autogui mcp
+# 启动treeland autogui mcp
 export SSE_HOST="0.0.0.0"
 export SSE_PORT=8000
 export OMNI_PARSER_SERVER="100.86.114.106:8000"
