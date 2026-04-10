@@ -172,6 +172,12 @@ else
     echo "ydotoold already running; skipping start." >&2
 fi
 
+;; 启动treeland autogui mcp
+export SSE_HOST="0.0.0.0"
+export SSE_PORT=8000
+export OMNI_PARSER_SERVER="100.86.114.106:8000"
+uv run treeland-autogui-mcp
+
 cat <<EOF
 
 Setup completed.
