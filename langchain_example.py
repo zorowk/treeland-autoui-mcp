@@ -45,7 +45,7 @@ async def batch_main(prompts: list[str], system_prompt: str = ''):
         for prompt in prompts:
             chat_history = ChatMessageHistory()
             if system_prompt == '':
-                system_prompt = '''You are using a Windows device.
+                system_prompt = '''You are using a Linux Deepin V25 Desktop device.
 You are able to use a mouse and keyboard to interact with the computer based on the given task and screenshot.
 
 You may be given some history plan and actions, this is the response from the previous loop.
