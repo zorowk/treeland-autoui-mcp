@@ -104,12 +104,15 @@ else
 fi
 
 echo "[3/7] Install uv"
-curl -LsSf https://astral.sh/uv/install.sh | sh
+
 export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
-command -v uv >/dev/null 2>&1 || {
-  echo "uv install failed. Ensure ~/.cargo/bin or ~/.local/bin is in PATH." >&2
-  exit 1
-}
+if command -v uv >/dev/null 2>&1; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    command -v uv >/dev/null 2>&1 || {
+        echo "uv install failed. Ensure ~/.cargo/bin or ~/.local/bin is in PATH." >&2
+        exit 1
+    }
+fi
 
 echo "[4/7] Create python virtual environment: ${VENV_DIR}"
 uv venv "${VENV_DIR}"
