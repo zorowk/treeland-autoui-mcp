@@ -1,4 +1,4 @@
-# omniparser-autogui-mcp
+# treeland-autogui-mcp
 
 （[中文版](README_zh.md)）
 
