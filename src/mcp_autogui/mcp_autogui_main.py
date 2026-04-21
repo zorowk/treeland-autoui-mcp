@@ -59,19 +59,19 @@ def mcp_autogui_main(mcp):
                 omniparser_start_thread.start()
             else:
                 omniparser_start_thread_func()
-        
+
     temp_dir = tempfile.TemporaryDirectory()
     dname = temp_dir.name
 
     @mcp.tool()
     async def omniparser_details_on_screen() -> list:
         """Get the screen and analyze its details.
-If a timeout occurs, you can continue by running it again.
+        If a timeout occurs, you can continue by running it again.
 
-Return value:
-    - Details such as the content of text.
-    - Screen capture with ID number added.
-"""
+    Return value:
+        - Details such as the content of text.
+        - Screen capture with ID number added.
+        """
         nonlocal omniparser_thread, result_image, detail, is_finished
 
         if not 'OMNI_PARSER_SERVER' in os.environ:
@@ -124,7 +124,7 @@ Return value:
                 is_finished = False
                 omniparser_thread = threading.Thread(target=omniparser_thread_func)
                 omniparser_thread.start()
-            
+
             while not is_finished:
                 await asyncio.sleep(0.1)
 
@@ -136,13 +136,13 @@ Return value:
     async def omniparser_click(id: int, button: str = 'left', clicks: int = 1) -> bool:
         """Click on anything on the screen.
 
-Args:
-    id: The element on the screen that it click. You can check it with "omniparser_details_on_screen".
-    button: Button to click. 'left', 'middle', or 'right'.
-    clicks: Number of clicks. 2 for double click.
-Return value:
-    True is success. False is means "this is not found".
-"""
+    Args:
+        id: The element on the screen that it click. You can check it with "omniparser_details_on_screen".
+        button: Button to click. 'left', 'middle', or 'right'.
+        clicks: Number of clicks. 2 for double click.
+    Return value:
+        True is success. False is means "this is not found".
+        """
         nonlocal current_mouse_x, current_mouse_y
         screen_width, screen_height = pyautogui.size()
         if len(detail) > id:
@@ -157,14 +157,14 @@ Return value:
     async def omniparser_drags(from_id: int, to_id: int, button: str = 'left', key: str = '') -> bool:
         """Drag and drop on the screen.
 
-Args:
-    from_id: The element on the screen that it start to drag. You can check it with "omniparser_details_on_screen".
-    to_id: The element on the screen that it end to drag. You can check it with "omniparser_details_on_screen".
-    button: Button to click. 'left', 'middle', or 'right'.
-    key: The name of the keyboard key if you hold down it while dragging. You can check key's name with "omniparser_get_keys_list".
-Return value:
-    True is success. False is means "this is not found".
-"""
+    Args:
+        from_id: The element on the screen that it start to drag. You can check it with "omniparser_details_on_screen".
+        to_id: The element on the screen that it end to drag. You can check it with "omniparser_details_on_screen".
+        button: Button to click. 'left', 'middle', or 'right'.
+        key: The name of the keyboard key if you hold down it while dragging. You can check key's name with "omniparser_get_keys_list".
+    Return value:
+        True is success. False is means "this is not found".
+        """
         nonlocal current_mouse_x, current_mouse_y
         screen_width, screen_height = pyautogui.size()
 
@@ -193,11 +193,11 @@ Return value:
     async def omniparser_mouse_move(id: int) -> bool:
         """Moves the mouse cursor over the specified element.
 
-Args:
-    id: The element on the screen that it move. You can check it with "omniparser_details_on_screen".
-Return value:
-    True is success. False is means "this is not found".
-"""
+    Args:
+        id: The element on the screen that it move. You can check it with "omniparser_details_on_screen".
+    Return value:
+        True is success. False is means "this is not found".
+        """
         nonlocal current_mouse_x, current_mouse_y
         screen_width, screen_height = pyautogui.size()
         if len(detail) <= id:
@@ -212,9 +212,11 @@ Return value:
     async def omniparser_scroll(clicks: int) -> None:
         """The mouse scrolling wheel behavior.
 
-Args:
-    clicks: Amount of scrolling. 1000 is scroll up 1000 "clicks" and -1000 is scroll down 1000 "clicks".
-"""
+    CRITICAL: Before scrolling, ensure the target window is focused.
+        It is highly recommended to click the window title bar or the target area first.
+    Args:
+        clicks: Amount of scrolling. 1000 is scroll up 1000 "clicks" and -1000 is scroll down 1000 "clicks".
+        """
         pyautogui.moveTo(current_mouse_x, current_mouse_y)
         pyautogui.scroll(clicks)
 
@@ -222,10 +224,15 @@ Args:
     async def omniparser_write(content: str, id: int = -1) -> None:
         """Type the characters in the string that is passed.
 
-Args:
-    content: What to enter.
-    id: Click on the target before typing. You can check it with "omniparser_details_on_screen".
-"""
+    IMPORTANT: A window must be active to receive text input.
+        If 'id' is provided, this tool will click the element to focus it.
+        If 'id' is -1, you MUST ensure the target window/input box is already focused
+        (e.g., by clicking it in a previous step).
+
+    Args:
+        content: What to enter.
+        id: Click on the target before typing. You can check it with "omniparser_details_on_screen".
+        """
         if id >= 0:
             await omniparser_click(id)
         else:
@@ -243,18 +250,21 @@ Args:
     async def omniparser_get_keys_list() -> list[str]:
         """List of keyboard keys. Used in "omniparser_input_key" etc.
 
-Return value:
-    List of keyboard keys.
-"""
+    Return value:
+        List of keyboard keys.
+        """
         return pyautogui.KEYBOARD_KEYS
 
     @mcp.tool()
     async def omniparser_input_key(key1: str, key2: str = '', key3: str = '') -> None:
-        """Press of keyboard keys. 
+        """Press of keyboard keys.
 
-Args:
-    key1-3: Press of keyboard keys. You can check key's name with "omniparser_get_keys_list". If you specify multiple, keys will be pressed down in order, and then released in reverse order.
-"""
+    CRITICAL: Shortcuts (like 'ctrl'+'c') only work if the target window is active.
+        Ensure you have clicked the target window to focus it before calling this.
+
+    Args:
+        key1-3: Press of keyboard keys. You can check key's name with "omniparser_get_keys_list". If you specify multiple, keys will be pressed down in order, and then released in reverse order.
+        """
         pyautogui.moveTo(current_mouse_x, current_mouse_y)
         if key2 is not None and key2 != '' and key3 is not None and key3 != '':
             pyautogui.hotkey(key1, key2, key3)
@@ -267,7 +277,7 @@ Args:
     async def omniparser_wait(time: float = 1.0) -> None:
         """Waits for the specified number of seconds.
 
-Args:
-    time: Waiting time (seconds).
-"""
+    Args:
+        time: Waiting time (seconds).
+        """
         await asyncio.sleep(time)
