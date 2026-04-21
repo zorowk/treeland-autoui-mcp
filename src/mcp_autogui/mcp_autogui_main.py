@@ -5,7 +5,6 @@ import sys
 import threading
 import io
 import asyncio
-import tempfile
 from contextlib import redirect_stdout
 import base64
 import json
@@ -15,53 +14,18 @@ from mcp.server.fastmcp import Image
 import PIL
 import requests
 
-omniparser_path = os.path.join(os.path.dirname(__file__), '..', '..', 'OmniParser')
-sys.path = [omniparser_path, ] + sys.path
-from util.omniparser import Omniparser
-sys.path = sys.path[1:]
-
 INPUT_IMAGE_SIZE = 960
 
 def mcp_autogui_main(mcp):
-    global omniparser
-    omniparser = None
-    input_image_path = ''
-    output_dir_path = ''
     omniparser_thread = None
     result_image = None
-    input_image_resized_path = None
     detail = None
     is_finished = False
 
     current_mouse_x, current_mouse_y = pyautogui.position()
-    with redirect_stdout(sys.stderr):
-        config = {
-            'som_model_path': os.environ['SOM_MODEL_PATH'] if 'SOM_MODEL_PATH' in os.environ else os.path.join(omniparser_path, 'weights/icon_detect/model.pt'),
-            'caption_model_name': os.environ['CAPTION_MODEL_NAME'] if 'CAPTION_MODEL_NAME' in os.environ else 'florence2',
-            'caption_model_path': os.environ['CAPTION_MODEL_PATH'] if 'CAPTION_MODEL_PATH' in os.environ else os.path.join(omniparser_path, 'weights/icon_caption_florence'),
-            'device': os.environ['OMNI_PARSER_DEVICE'] if 'OMNI_PARSER_DEVICE' in os.environ else 'cuda',
-            'BOX_TRESHOLD': float(os.environ['BOX_TRESHOLD']) if 'BOX_TRESHOLD' in os.environ else 0.05,
-        }
 
-        if not 'OMNI_PARSER_SERVER' in os.environ:
-            def omniparser_start_thread_func():
-                global omniparser
-
-                sys.path = [os.path.join(os.path.dirname(__file__), '..', '..'), ] + sys.path
-                from download_models import download_omniparser_models
-                download_omniparser_models()
-                sys.path = sys.path[1:]
-
-                omniparser = Omniparser(config)
-                #print('Loading Omniparser is finished.', file=sys.stderr)
-            if 'OMNI_PARSER_BACKEND_LOAD' in os.environ and os.environ['OMNI_PARSER_BACKEND_LOAD']:
-                omniparser_start_thread = threading.Thread(target=omniparser_start_thread_func)
-                omniparser_start_thread.start()
-            else:
-                omniparser_start_thread_func()
-
-    temp_dir = tempfile.TemporaryDirectory()
-    dname = temp_dir.name
+    if 'OMNI_PARSER_SERVER' not in os.environ:
+        raise RuntimeError('OMNI_PARSER_SERVER environment variable is required.')
 
     @mcp.tool()
     async def omniparser_details_on_screen() -> list:
@@ -74,10 +38,6 @@ def mcp_autogui_main(mcp):
         """
         nonlocal omniparser_thread, result_image, detail, is_finished
 
-        if not 'OMNI_PARSER_SERVER' in os.environ:
-            while omniparser is None:
-                await asyncio.sleep(0.1)
-
         detail_text = ''
         with redirect_stdout(sys.stderr):
             def omniparser_thread_func():
@@ -85,21 +45,18 @@ def mcp_autogui_main(mcp):
                 with redirect_stdout(sys.stderr):
                     screenshot_image = pyautogui.screenshot()
 
-                    if 'OMNI_PARSER_SERVER' in os.environ:
-                        buffered = io.BytesIO()
-                        screenshot_image.save(buffered, format='png')
-                        send_img = base64.b64encode(buffered.getvalue()).decode('ascii')
-                        json_data = json.dumps({'base64_image': send_img})
-                        response = requests.post(
-                            f"http://{os.environ['OMNI_PARSER_SERVER']}/parse/",
-                            data=json_data,
-                            headers={"Content-Type": "application/json"}
-                        )
-                        response_json = response.json()
-                        dino_labled_img = response_json['som_image_base64']
-                        detail = response_json['parsed_content_list']
-                    else:
-                        dino_labled_img, detail = omniparser.parse_raw(screenshot_image)
+                    buffered = io.BytesIO()
+                    screenshot_image.save(buffered, format='png')
+                    send_img = base64.b64encode(buffered.getvalue()).decode('ascii')
+                    json_data = json.dumps({'base64_image': send_img})
+                    response = requests.post(
+                        f"http://{os.environ['OMNI_PARSER_SERVER']}/parse/",
+                        data=json_data,
+                        headers={"Content-Type": "application/json"}
+                    )
+                    response_json = response.json()
+                    dino_labled_img = response_json['som_image_base64']
+                    detail = response_json['parsed_content_list']
 
                     image_bytes = base64.b64decode(dino_labled_img)
                     result_image_local = PIL.Image.open(io.BytesIO(image_bytes))
