@@ -11,7 +11,7 @@ from langchain_core.messages import SystemMessage
 from langchain_openai import ChatOpenAI
 
 from langchain_google_genai import ChatGoogleGenerativeAI
-from google.generativeai.types.safety_types import HarmBlockThreshold, HarmCategory
+from google.genai.types import HarmBlockThreshold, HarmCategory
 
 from mcp_autogui.langchain.mcp_manager import McpManager
 from mcp_autogui.langchain.agent_graph import create_agent_graph
@@ -29,6 +29,9 @@ def create_agent(tools):
     }
     llm = ChatGoogleGenerativeAI(
         model='gemini-2.0-flash-exp',
+        temperature=0.7,
+        max_tokens=2048,
+        api_key=os.getenv("GOOGLE_API_KEY"),
         safety_settings=safety_settings,
     )
     agent = create_agent_graph(llm, tools, debug=True)
