@@ -13,7 +13,6 @@ import pyautogui
 import pyperclip
 from mcp.server.fastmcp import Image
 import PIL
-import pygetwindow as gw
 import requests
 
 omniparser_path = os.path.join(os.path.dirname(__file__), '..', '..', 'OmniParser')
@@ -35,15 +34,6 @@ def mcp_autogui_main(mcp):
     is_finished = False
 
     current_mouse_x, current_mouse_y = pyautogui.position()
-    is_set_target_window = False
-    match_windows = None
-    if 'TARGET_WINDOW_NAME' in os.environ:
-        match_windows = gw.getWindowsWithTitle(os.environ['TARGET_WINDOW_NAME'])
-    if match_windows:
-        current_window = match_windows[0]
-        is_set_target_window = True
-    else:
-        current_window = gw.getActiveWindow()
     with redirect_stdout(sys.stderr):
         config = {
             'som_model_path': os.environ['SOM_MODEL_PATH'] if 'SOM_MODEL_PATH' in os.environ else os.path.join(omniparser_path, 'weights/icon_detect/model.pt'),
@@ -93,13 +83,7 @@ Return value:
             def omniparser_thread_func():
                 nonlocal result_image, detail, is_finished, detail_text
                 with redirect_stdout(sys.stderr):
-                    if is_set_target_window:
-                        current_window.activate()
-
                     screenshot_image = pyautogui.screenshot()
-
-                    if is_set_target_window:
-                        screenshot_image = screenshot_image.crop((current_window.left, current_window.top, current_window.right, current_window.bottom))
 
                     if 'OMNI_PARSER_SERVER' in os.environ:
                         buffered = io.BytesIO()
@@ -159,22 +143,13 @@ Args:
 Return value:
     True is success. False is means "this is not found".
 """
-        nonlocal current_mouse_x, current_mouse_y, current_window
+        nonlocal current_mouse_x, current_mouse_y
         screen_width, screen_height = pyautogui.size()
         if len(detail) > id:
-            if is_set_target_window:
-                current_window.activate()
-                left = current_window.left
-                top = current_window.top
-            else:
-                left = 0
-                top = 0
             compos = detail[id]['bbox']
-            current_mouse_x = int((compos[0] + compos[2]) * screen_width) // 2 + left
-            current_mouse_y = int((compos[1] + compos[3]) * screen_height) // 2 + top
+            current_mouse_x = int((compos[0] + compos[2]) * screen_width) // 2
+            current_mouse_y = int((compos[1] + compos[3]) * screen_height) // 2
             pyautogui.click(x=current_mouse_x, y=current_mouse_y, button=button, clicks=clicks)
-            if not is_set_target_window:
-                current_window = gw.getActiveWindow()
             return True
         return False
 
@@ -190,27 +165,19 @@ Args:
 Return value:
     True is success. False is means "this is not found".
 """
-        nonlocal current_mouse_x, current_mouse_y, current_window
+        nonlocal current_mouse_x, current_mouse_y
         screen_width, screen_height = pyautogui.size()
-
-        if is_set_target_window:
-            current_window.activate()
-            left = current_window.left
-            top = current_window.top
-        else:
-            left = 0
-            top = 0
 
         from_x = -1
         to_x = -1
         if len(detail) <= from_id or len(detail) <= to_id:
             return False
         compos = detail[from_id]['bbox']
-        from_x = int((compos[0] + compos[2]) * screen_width) // 2 + left
-        from_y = int((compos[1] + compos[3]) * screen_height) // 2 + top
+        from_x = int((compos[0] + compos[2]) * screen_width) // 2
+        from_y = int((compos[1] + compos[3]) * screen_height) // 2
         compos = detail[to_id]['bbox']
-        to_x = int((compos[0] + compos[2]) * screen_width) // 2 + left
-        to_y = int((compos[1] + compos[3]) * screen_height) // 2 + top
+        to_x = int((compos[0] + compos[2]) * screen_width) // 2
+        to_y = int((compos[1] + compos[3]) * screen_height) // 2
 
         if key is not None and key != '':
             pyautogui.keyDown(key)
@@ -220,8 +187,6 @@ Return value:
             pyautogui.keyUp(key)
         current_mouse_x = to_x
         current_mouse_y = to_y
-        if not is_set_target_window:
-            current_window = gw.getActiveWindow()
         return True
 
     @mcp.tool()
@@ -233,23 +198,14 @@ Args:
 Return value:
     True is success. False is means "this is not found".
 """
-        nonlocal current_mouse_x, current_mouse_y, current_window
+        nonlocal current_mouse_x, current_mouse_y
         screen_width, screen_height = pyautogui.size()
         if len(detail) <= id:
             return False
         compos = detail[id]['bbox']
-        if is_set_target_window:
-            current_window.activate()
-            left = current_window.left
-            top = current_window.top
-        else:
-            left = 0
-            top = 0
-        current_mouse_x = int((compos[0] + compos[2]) * screen_width) // 2 + left
-        current_mouse_y = int((compos[1] + compos[3]) * screen_height) // 2 + top
+        current_mouse_x = int((compos[0] + compos[2]) * screen_width) // 2
+        current_mouse_y = int((compos[1] + compos[3]) * screen_height) // 2
         pyautogui.moveTo(current_mouse_x, current_mouse_y)
-        if not is_set_target_window:
-            current_window = gw.getActiveWindow()
         return True
 
     @mcp.tool()
@@ -259,7 +215,6 @@ Return value:
 Args:
     clicks: Amount of scrolling. 1000 is scroll up 1000 "clicks" and -1000 is scroll down 1000 "clicks".
 """
-        current_window.activate()
         pyautogui.moveTo(current_mouse_x, current_mouse_y)
         pyautogui.scroll(clicks)
 
@@ -274,7 +229,6 @@ Args:
         if id >= 0:
             await omniparser_click(id)
         else:
-            current_window.activate()
             pyautogui.moveTo(current_mouse_x, current_mouse_y)
         if content.isascii():
             pyautogui.write(content)
@@ -301,7 +255,6 @@ Return value:
 Args:
     key1-3: Press of keyboard keys. You can check key's name with "omniparser_get_keys_list". If you specify multiple, keys will be pressed down in order, and then released in reverse order.
 """
-        current_window.activate()
         pyautogui.moveTo(current_mouse_x, current_mouse_y)
         if key2 is not None and key2 != '' and key3 is not None and key3 != '':
             pyautogui.hotkey(key1, key2, key3)

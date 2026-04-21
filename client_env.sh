@@ -25,6 +25,7 @@ sudo apt-get install -y gir1.2-atspi-2.0
 sudo apt-get install -y python3-dev build-essential
 sudo apt-get install -y libcairo2-dev libgirepository-2.0-dev
 sudo apt-get install -y scdoc
+sudo apt-get install -y wlrctl
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="${PROJECT_ROOT}/.venv"
