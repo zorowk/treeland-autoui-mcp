@@ -87,6 +87,11 @@ def mcp_autogui_main(mcp):
 
             omniparser_thread = None
 
+            # Save result image to /tmp only when debug mode is enabled
+            if os.environ.get('OMNIPARSER_MCP_DEBUG') == '1':
+                with open('/tmp/omniparser_mark.png', 'wb') as f:
+                    f.write(result_image.getvalue())
+
             return [detail_text, Image(data=result_image.getvalue(), format="png")]
 
     @mcp.tool()

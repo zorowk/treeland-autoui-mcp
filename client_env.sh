@@ -153,6 +153,7 @@ fi
 export SSE_HOST="0.0.0.0"
 export SSE_PORT=8000
 export OMNI_PARSER_SERVER="100.86.114.106:8000"
+export OMNIPARSER_MCP_DEBUG=1
 uv run treeland-autogui-mcp
 
 cat <<EOF
