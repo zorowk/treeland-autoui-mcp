@@ -8,6 +8,7 @@ import asyncio
 from contextlib import redirect_stdout
 import base64
 import json
+import subprocess
 import pyautogui
 import pyperclip
 from mcp.server.fastmcp import Image
@@ -243,3 +244,39 @@ def mcp_autogui_main(mcp):
         time: Waiting time (seconds).
         """
         await asyncio.sleep(time)
+
+    @mcp.tool()
+    async def omniparser_exec_command(command: str, timeout: int = 30) -> dict:
+        """Execute shell command on local machine.
+
+    Args:
+        command: Shell command to execute.
+        timeout: Execution timeout in seconds.
+    Return value:
+        dict with stdout, stderr, return_code.
+        """
+        try:
+            result = subprocess.run(
+                command,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=timeout
+            )
+            return {
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "return_code": result.returncode
+            }
+        except subprocess.TimeoutExpired:
+            return {
+                "stdout": "",
+                "stderr": f"Command timed out after {timeout} seconds",
+                "return_code": -1
+            }
+        except Exception as e:
+            return {
+                "stdout": "",
+                "stderr": str(e),
+                "return_code": -1
+            }
