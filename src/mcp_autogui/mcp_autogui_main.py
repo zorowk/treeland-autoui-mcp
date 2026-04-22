@@ -280,3 +280,18 @@ def mcp_autogui_main(mcp):
                 "stderr": str(e),
                 "return_code": -1
             }
+
+    @mcp.tool()
+    async def omniparser_get_screenshot_base64() -> str:
+        """Get the last captured screenshot as base64 string.
+
+    Return value:
+        Base64 encoded PNG image string with ID labels.
+        """
+        nonlocal result_image
+        if result_image is None:
+            # 如果还没有截图，先执行一次
+            await omniparser_details_on_screen()
+
+        result_image.seek(0)
+        return base64.b64encode(result_image.getvalue()).decode('ascii')
