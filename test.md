@@ -32,6 +32,7 @@ uv sync --extra langchain
 ```
 
 ### 2.2 Configure remote MCP endpoints
+claude mcp add-json treeland-autogui '{"type":"sse","url":"http://10.20.7.58:8000/sse"}'
 
 Use the multi-machine template:
 
