@@ -92,6 +92,9 @@ def mcp_autogui_main(mcp):
                 with open('/tmp/omniparser_mark.png', 'wb') as f:
                     f.write(result_image.getvalue())
 
+                with open('/tmp/omniparser_mark.json', 'w', encoding='utf-8') as f:
+                    json.dump(detail, f, ensure_ascii=False, indent=2)
+
             return [detail_text, Image(data=result_image.getvalue(), format="png")]
 
     @mcp.tool()
