@@ -31,9 +31,7 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="${PROJECT_ROOT}/.venv"
 TMP_BASE="$(mktemp -d /tmp/treeland-autotests-deps.XXXXXX)"
 
-REPO_3_URL="https://github.com/zorowk/wl-find-cursor.git"
 REPO_4_URL="https://github.com/ReimuNotMoe/ydotool.git"
-REPO_3_DIR="${TMP_BASE}/wl-find-cursor"
 REPO_4_DIR="${TMP_BASE}/ydotool"
 
 # uv index mirrors
@@ -46,21 +44,6 @@ cleanup() {
   fi
 }
 trap cleanup EXIT
-
-install_wl_find_cursor() {
-  if command -v wl-find-cursor >/dev/null 2>&1; then
-    echo "wl-find-cursor is already installed; skipping."
-    return 0
-  fi
-
-  echo "Installing wl-find-cursor from source: ${REPO_3_URL}"
-  git clone --depth 1 "${REPO_3_URL}" "${REPO_3_DIR}"
-  (
-    cd "${REPO_3_DIR}"
-    make
-    sudo make install
-  )
-}
 
 install_ydotool() {
   if command -v ydotool >/dev/null 2>&1; then
@@ -78,13 +61,10 @@ install_ydotool() {
   )
 }
 
-echo "[1/7] Install wl-find-cursor (system-wide)"
-install_wl_find_cursor
-
-echo "[2/7] Optional ydotool install"
+echo "[1/7] Optional ydotool install"
 install_ydotool
 
-echo "[3/7] Install uv"
+echo "[2/7] Install uv"
 
 export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
 if ! command -v uv >/dev/null 2>&1; then
@@ -95,7 +75,7 @@ if ! command -v uv >/dev/null 2>&1; then
     }
 fi
 
-echo "[4/7] Install python dependencies via uv"
+echo "[3/7] Install python dependencies via uv"
 uv sync
 
 if python - <<'PY'
