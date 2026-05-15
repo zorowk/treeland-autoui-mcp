@@ -36,6 +36,7 @@ def fuse_omniparser_with_treeland(
 ) -> dict[str, Any]:
     fused_tree = deepcopy(treeland_tree)
     screen_width, screen_height = screen_size_from_treeland(fused_tree)
+    ensure_lockscreen_window(fused_tree, screen_width, screen_height)
     windows = flatten_treeland_windows(fused_tree, initialize_elements=True)
     desktop_unparented_elements = []
     assigned_count = 0
@@ -73,6 +74,80 @@ def fuse_omniparser_with_treeland(
         "window_count": len(windows),
     }
     return fused_tree
+
+
+def ensure_lockscreen_window(tree: dict[str, Any], screen_width: float, screen_height: float) -> None:
+    if tree.get("currentMode") != "LockScreen":
+        return
+
+    layers = tree.setdefault("layers", [])
+    lockscreen_layer = None
+    for layer in layers:
+        if str(layer.get("name") or "").lower() == "lockscreen":
+            lockscreen_layer = layer
+            break
+
+    if lockscreen_layer is None:
+        max_layer = max((_number(layer.get("layer")) for layer in layers), default=0.0)
+        lockscreen_layer = {
+            "name": "lockscreen",
+            "layer": max_layer + 1.0,
+            "windows": [],
+            "workspaces": [],
+        }
+        layers.append(lockscreen_layer)
+    else:
+        lockscreen_layer.setdefault("windows", [])
+        lockscreen_layer.setdefault("workspaces", [])
+
+    if any(window.get("synthetic") is True and window.get("container") == "lockscreen" for window in lockscreen_layer["windows"]):
+        return
+
+    layer_value = _number(lockscreen_layer.get("layer"))
+    lockscreen_layer["windows"].append(
+        {
+            "appId": "lockscreen",
+            "title": "Lock Screen",
+            "output": "",
+            "container": "lockscreen",
+            "workspace": -1,
+            "layer": layer_value,
+            "z": 0,
+            "type": 3,
+            "state": 0,
+            "visible": True,
+            "active": True,
+            "synthetic": True,
+            "geometry": {
+                "x": 0.0,
+                "y": 0.0,
+                "width": screen_width,
+                "height": screen_height,
+            },
+            "titlebarGeometry": {
+                "x": 0.0,
+                "y": 0.0,
+                "width": 0.0,
+                "height": 0.0,
+            },
+            "boundingRect": {
+                "x": 0.0,
+                "y": 0.0,
+                "width": screen_width,
+                "height": screen_height,
+            },
+            "iconGeometry": {
+                "x": 0.0,
+                "y": 0.0,
+                "width": 0.0,
+                "height": 0.0,
+            },
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+            },
+        }
+    )
 
 
 def build_action_targets(fused_tree: dict[str, Any]) -> dict[str, Any]:
