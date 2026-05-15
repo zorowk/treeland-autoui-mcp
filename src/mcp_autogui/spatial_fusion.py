@@ -99,24 +99,24 @@ def flatten_treeland_windows(
     tree: dict[str, Any],
     initialize_elements: bool = False,
 ) -> list[dict[str, Any]]:
-    windows: list[dict[str, Any]] = []
+    window_entries: list[tuple[float, float, dict[str, Any]]] = []
     for layer in tree.get("layers", []):
         layer_name = layer.get("name", "")
         for window in layer.get("windows", []):
-            _append_window(windows, window, layer_name, layer.get("layer"), initialize_elements)
+            _append_window(window_entries, window, layer_name, layer.get("layer"), initialize_elements)
 
         for workspace in layer.get("workspaces", []):
             if workspace.get("isActive") is not True:
                 continue
             for window in workspace.get("windows", []):
-                _append_window(windows, window, layer_name, layer.get("layer"), initialize_elements)
+                _append_window(window_entries, window, layer_name, layer.get("layer"), initialize_elements)
 
-    windows.sort(key=lambda window: (_number(window.get("layer")), _number(window.get("z"))), reverse=True)
-    return windows
+    window_entries.sort(key=lambda entry: (entry[0], entry[1]), reverse=True)
+    return [window for _, _, window in window_entries]
 
 
 def _append_window(
-    windows: list[dict[str, Any]],
+    window_entries: list[tuple[float, float, dict[str, Any]]],
     window: dict[str, Any],
     layer_name: str,
     layer_value: Any,
@@ -133,7 +133,7 @@ def _append_window(
         window["elements"] = []
     else:
         window.setdefault("elements", [])
-    windows.append(window)
+    window_entries.append((_number(window.get("layer", layer_value)), _number(window.get("z")), window))
 
 
 def _build_element_record(
