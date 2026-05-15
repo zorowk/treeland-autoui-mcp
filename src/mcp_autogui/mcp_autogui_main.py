@@ -16,7 +16,7 @@ import pyperclip
 from mcp.server.fastmcp import Image
 import PIL
 import requests
-from .spatial_fusion import build_action_targets, flatten_treeland_windows, fuse_omniparser_with_treeland
+from .spatial_fusion import actionable_treeland_windows, build_action_targets, fuse_omniparser_with_treeland
 
 INPUT_IMAGE_SIZE = 960
 
@@ -50,7 +50,7 @@ def omniparser_bbox_center(bbox, screen_width, screen_height):
 def get_fused_window_by_id(fused_tree, window_id):
     if fused_tree is None:
         return None
-    windows = flatten_treeland_windows(fused_tree)
+    windows = actionable_treeland_windows(fused_tree)
     if window_id < 0 or window_id >= len(windows):
         return None
     return windows[window_id]
@@ -116,7 +116,7 @@ def mcp_autogui_main(mcp):
         detail_text = ''
         with redirect_stdout(sys.stderr):
             def omniparser_thread_func():
-                nonlocal result_image, detail, fused_detail, is_finished, detail_text
+                nonlocal result_image, detail, fused_detail, is_finished
                 with redirect_stdout(sys.stderr):
                     screenshot_image = pyautogui.screenshot()
 
@@ -143,10 +143,6 @@ def mcp_autogui_main(mcp):
 
                     result_image = io.BytesIO()
                     result_image_local.save(result_image, format='png')
-
-                    detail_text = ''
-                    for loop, content in enumerate(detail):
-                        detail_text += f'ID: {loop}, {content["type"]}: {content["content"]}\n'
 
                     is_finished = True
             if omniparser_thread is None:
@@ -188,7 +184,6 @@ def mcp_autogui_main(mcp):
                         f"windows {stats.get('window_count', 0)}",
                         file=sys.stderr,
                     )
-                    detail_text += '\nTreeland OmniParser action targets:\n'
                     detail_text += json.dumps(build_action_targets(fused_detail), ensure_ascii=False, indent=2)
                 except Exception as exc:
                     fusion_error = f"{type(exc).__name__}: {exc}"
@@ -204,6 +199,10 @@ def mcp_autogui_main(mcp):
 
                 with open('/tmp/omniparser_mark.json', 'w', encoding='utf-8') as f:
                     json.dump(detail, f, ensure_ascii=False, indent=2)
+
+                with open('/tmp/omniparser_detail_text.txt', 'w', encoding='utf-8') as f:
+                    f.write(detail_text)
+
                 if fused_detail is not None:
                     with open('/tmp/omniparser_fused_windowtree.json', 'w', encoding='utf-8') as f:
                         json.dump(fused_detail, f, ensure_ascii=False, indent=2)

@@ -152,7 +152,7 @@ def ensure_lockscreen_window(tree: dict[str, Any], screen_width: float, screen_h
 
 def build_action_targets(fused_tree: dict[str, Any]) -> dict[str, Any]:
     windows = []
-    for window_id, window in enumerate(flatten_treeland_windows(fused_tree)):
+    for window_id, window in enumerate(actionable_treeland_windows(fused_tree)):
         elements = [
             {
                 "element_id": element.get("id"),
@@ -180,16 +180,22 @@ def build_action_targets(fused_tree: dict[str, Any]) -> dict[str, Any]:
         "currentMode": fused_tree.get("currentMode"),
         "stats": fused_tree.get("fusion_stats", {}),
         "windows": windows,
-        "desktop_elements": [
-            {
-                "element_id": element.get("id"),
-                "type": element.get("type"),
-                "content": element.get("content"),
-                "interactive": element.get("interactivity"),
-            }
-            for element in fused_tree.get("desktop_unparented_elements", [])
-        ],
     }
+
+
+def actionable_treeland_windows(tree: dict[str, Any]) -> list[dict[str, Any]]:
+    actionable_windows = []
+    covering_rects: list[Rect] = []
+    for window in flatten_treeland_windows(tree):
+        rect = _geometry_to_box(window.get("geometry") or {})
+        if rect is None:
+            continue
+        if _box_fully_covered(rect, covering_rects):
+            continue
+
+        actionable_windows.append(window)
+        covering_rects.append(rect)
+    return actionable_windows
 
 
 def screen_size_from_treeland(tree: dict[str, Any]) -> tuple[float, float]:
@@ -295,6 +301,51 @@ def _window_regions(window: dict[str, Any]) -> list[dict[str, Any]]:
 def _is_draggable_window(window: dict[str, Any]) -> bool:
     container = str(window.get("container") or "").lower()
     return container == "workspace"
+
+
+def _geometry_to_box(geometry: dict[str, Any]) -> Rect | None:
+    if not _has_area(geometry):
+        return None
+    x1 = _number(geometry.get("x"))
+    y1 = _number(geometry.get("y"))
+    return {
+        "x1": x1,
+        "y1": y1,
+        "x2": x1 + _number(geometry.get("width")),
+        "y2": y1 + _number(geometry.get("height")),
+    }
+
+
+def _box_fully_covered(box: Rect, covering_boxes: list[Rect]) -> bool:
+    remaining = [box]
+    for covering_box in covering_boxes:
+        next_remaining = []
+        for remaining_box in remaining:
+            next_remaining.extend(_subtract_box(remaining_box, covering_box))
+        remaining = next_remaining
+        if not remaining:
+            return True
+    return False
+
+
+def _subtract_box(box: Rect, covering_box: Rect) -> list[Rect]:
+    ix1 = max(box["x1"], covering_box["x1"])
+    iy1 = max(box["y1"], covering_box["y1"])
+    ix2 = min(box["x2"], covering_box["x2"])
+    iy2 = min(box["y2"], covering_box["y2"])
+    if ix1 >= ix2 or iy1 >= iy2:
+        return [box]
+
+    pieces = []
+    if box["y1"] < iy1:
+        pieces.append({"x1": box["x1"], "y1": box["y1"], "x2": box["x2"], "y2": iy1})
+    if iy2 < box["y2"]:
+        pieces.append({"x1": box["x1"], "y1": iy2, "x2": box["x2"], "y2": box["y2"]})
+    if box["x1"] < ix1:
+        pieces.append({"x1": box["x1"], "y1": iy1, "x2": ix1, "y2": iy2})
+    if ix2 < box["x2"]:
+        pieces.append({"x1": ix2, "y1": iy1, "x2": box["x2"], "y2": iy2})
+    return pieces
 
 
 def _relative_box(absolute_box: Rect, geometry: dict[str, Any]) -> Rect:
