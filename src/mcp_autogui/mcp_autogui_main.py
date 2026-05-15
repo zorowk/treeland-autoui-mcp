@@ -7,19 +7,50 @@ import io
 import asyncio
 from contextlib import redirect_stdout
 import base64
+import ast
 import json
+from pathlib import Path
+import subprocess
 import pyautogui
 import pyperclip
 from mcp.server.fastmcp import Image
 import PIL
 import requests
+from .spatial_fusion import fuse_omniparser_with_treeland
 
 INPUT_IMAGE_SIZE = 960
+
+
+def get_treeland_layout_tree():
+    from treeland_windowtree import WindowTreeClient
+
+    client = WindowTreeClient()
+    return client.get_full_layout_tree()
+
+
+def get_treeland_layout_tree_via_script(timeout=35):
+    script_path = Path(__file__).resolve().parents[2] / "windowtree.py"
+    result = subprocess.run(
+        [sys.executable, str(script_path)],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+    return ast.literal_eval(result.stdout)
+
+
+def omniparser_bbox_center(bbox, screen_width, screen_height):
+    xmin, ymin, xmax, ymax = bbox
+    x = int((xmin + xmax) * screen_width) // 2
+    y = int((ymin + ymax) * screen_height) // 2
+    return x, y
 
 def mcp_autogui_main(mcp):
     omniparser_thread = None
     result_image = None
     detail = None
+    fused_detail = None
     is_finished = False
 
     current_mouse_x, current_mouse_y = pyautogui.position()
@@ -36,12 +67,12 @@ def mcp_autogui_main(mcp):
         - Details such as the content of text.
         - Screen capture with ID number added.
         """
-        nonlocal omniparser_thread, result_image, detail, is_finished
+        nonlocal omniparser_thread, result_image, detail, fused_detail, is_finished
 
         detail_text = ''
         with redirect_stdout(sys.stderr):
             def omniparser_thread_func():
-                nonlocal result_image, detail, is_finished, detail_text
+                nonlocal result_image, detail, fused_detail, is_finished, detail_text
                 with redirect_stdout(sys.stderr):
                     screenshot_image = pyautogui.screenshot()
 
@@ -57,7 +88,6 @@ def mcp_autogui_main(mcp):
                     response_json = response.json()
                     dino_labled_img = response_json['som_image_base64']
                     detail = response_json['parsed_content_list']
-
                     image_bytes = base64.b64decode(dino_labled_img)
                     result_image_local = PIL.Image.open(io.BytesIO(image_bytes))
 
@@ -78,6 +108,7 @@ def mcp_autogui_main(mcp):
             if omniparser_thread is None:
                 result_image = None
                 detail = None
+                fused_detail = None
                 is_finished = False
                 omniparser_thread = threading.Thread(target=omniparser_thread_func)
                 omniparser_thread.start()
@@ -87,6 +118,41 @@ def mcp_autogui_main(mcp):
 
             omniparser_thread = None
 
+            fusion_error = None
+            try:
+                treeland_tree = get_treeland_layout_tree()
+            except Exception as exc:
+                first_error = f"{type(exc).__name__}: {exc}"
+                print(f"Treeland in-process fetch failed: {first_error}", file=sys.stderr)
+                try:
+                    treeland_tree = get_treeland_layout_tree_via_script()
+                except Exception as fallback_exc:
+                    fusion_error = (
+                        f"in-process {first_error}; "
+                        f"script fallback {type(fallback_exc).__name__}: {fallback_exc}"
+                    )
+                    treeland_tree = None
+
+            if treeland_tree is not None:
+                try:
+                    fused_detail = fuse_omniparser_with_treeland(detail, treeland_tree)
+                    stats = fused_detail.get("fusion_stats", {})
+                    print(
+                        "Treeland fusion: "
+                        f"assigned {stats.get('assigned_elements', 0)} / {stats.get('total_elements', 0)} "
+                        f"elements, unassigned {stats.get('unassigned_elements', 0)}, "
+                        f"windows {stats.get('window_count', 0)}",
+                        file=sys.stderr,
+                    )
+                    detail_text += '\nTreeland OmniParser fused window tree:\n'
+                    detail_text += json.dumps(fused_detail, ensure_ascii=False, indent=2)
+                except Exception as exc:
+                    fusion_error = f"{type(exc).__name__}: {exc}"
+
+            if fusion_error is not None:
+                print(f"Treeland fusion failed: {fusion_error}", file=sys.stderr)
+                detail_text += f'\nTreeland OmniParser fusion failed: {fusion_error}\n'
+
             # Save result image to /tmp only when debug mode is enabled
             if os.environ.get('OMNIPARSER_MCP_DEBUG') == '1':
                 with open('/tmp/omniparser_mark.png', 'wb') as f:
@@ -94,6 +160,9 @@ def mcp_autogui_main(mcp):
 
                 with open('/tmp/omniparser_mark.json', 'w', encoding='utf-8') as f:
                     json.dump(detail, f, ensure_ascii=False, indent=2)
+                if fused_detail is not None:
+                    with open('/tmp/omniparser_fused_windowtree.json', 'w', encoding='utf-8') as f:
+                        json.dump(fused_detail, f, ensure_ascii=False, indent=2)
 
             return [detail_text, Image(data=result_image.getvalue(), format="png")]
 
@@ -112,8 +181,7 @@ def mcp_autogui_main(mcp):
         screen_width, screen_height = pyautogui.size()
         if len(detail) > id:
             compos = detail[id]['bbox']
-            current_mouse_x = int((compos[0] + compos[2]) * screen_width) // 2
-            current_mouse_y = int((compos[1] + compos[3]) * screen_height) // 2
+            current_mouse_x, current_mouse_y = omniparser_bbox_center(compos, screen_width, screen_height)
             pyautogui.click(x=current_mouse_x, y=current_mouse_y, button=button, clicks=clicks)
             return True
         return False
@@ -138,11 +206,9 @@ def mcp_autogui_main(mcp):
         if len(detail) <= from_id or len(detail) <= to_id:
             return False
         compos = detail[from_id]['bbox']
-        from_x = int((compos[0] + compos[2]) * screen_width) // 2
-        from_y = int((compos[1] + compos[3]) * screen_height) // 2
+        from_x, from_y = omniparser_bbox_center(compos, screen_width, screen_height)
         compos = detail[to_id]['bbox']
-        to_x = int((compos[0] + compos[2]) * screen_width) // 2
-        to_y = int((compos[1] + compos[3]) * screen_height) // 2
+        to_x, to_y = omniparser_bbox_center(compos, screen_width, screen_height)
 
         if key is not None and key != '':
             pyautogui.keyDown(key)
@@ -168,8 +234,7 @@ def mcp_autogui_main(mcp):
         if len(detail) <= id:
             return False
         compos = detail[id]['bbox']
-        current_mouse_x = int((compos[0] + compos[2]) * screen_width) // 2
-        current_mouse_y = int((compos[1] + compos[3]) * screen_height) // 2
+        current_mouse_x, current_mouse_y = omniparser_bbox_center(compos, screen_width, screen_height)
         pyautogui.moveTo(current_mouse_x, current_mouse_y)
         return True
 
