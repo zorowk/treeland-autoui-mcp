@@ -75,6 +75,48 @@ def fuse_omniparser_with_treeland(
     return fused_tree
 
 
+def build_action_targets(fused_tree: dict[str, Any]) -> dict[str, Any]:
+    windows = []
+    for window_id, window in enumerate(flatten_treeland_windows(fused_tree)):
+        elements = [
+            {
+                "element_id": element.get("id"),
+                "type": element.get("type"),
+                "content": element.get("content"),
+                "interactive": element.get("interactivity"),
+            }
+            for element in window.get("elements", [])
+        ]
+        target = {
+            "window_id": window_id,
+            "title": window.get("title"),
+            "appId": window.get("appId"),
+            "container": window.get("container"),
+            "workspace": window.get("workspace"),
+            "active": window.get("active"),
+            "layer": window.get("layer"),
+            "z": window.get("z"),
+            "regions": _window_regions(window),
+            "elements": elements,
+        }
+        windows.append(target)
+
+    return {
+        "currentMode": fused_tree.get("currentMode"),
+        "stats": fused_tree.get("fusion_stats", {}),
+        "windows": windows,
+        "desktop_elements": [
+            {
+                "element_id": element.get("id"),
+                "type": element.get("type"),
+                "content": element.get("content"),
+                "interactive": element.get("interactivity"),
+            }
+            for element in fused_tree.get("desktop_unparented_elements", [])
+        ],
+    }
+
+
 def screen_size_from_treeland(tree: dict[str, Any]) -> tuple[float, float]:
     background_rects = []
     for layer in tree.get("layers", []):
@@ -155,6 +197,29 @@ def _build_element_record(
     if relative_box is not None:
         record["relative_box"] = relative_box
     return record
+
+
+def _window_regions(window: dict[str, Any]) -> list[dict[str, Any]]:
+    regions = [
+        {
+            "name": "content",
+            "actions": ["click"],
+        }
+    ]
+    if _is_draggable_window(window):
+        regions.insert(
+            0,
+            {
+                "name": "titlebar",
+                "actions": ["click", "drag_window"],
+            },
+        )
+    return regions
+
+
+def _is_draggable_window(window: dict[str, Any]) -> bool:
+    container = str(window.get("container") or "").lower()
+    return container == "workspace"
 
 
 def _relative_box(absolute_box: Rect, geometry: dict[str, Any]) -> Rect:

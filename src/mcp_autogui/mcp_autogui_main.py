@@ -16,7 +16,7 @@ import pyperclip
 from mcp.server.fastmcp import Image
 import PIL
 import requests
-from .spatial_fusion import fuse_omniparser_with_treeland
+from .spatial_fusion import build_action_targets, flatten_treeland_windows, fuse_omniparser_with_treeland
 
 INPUT_IMAGE_SIZE = 960
 
@@ -45,6 +45,50 @@ def omniparser_bbox_center(bbox, screen_width, screen_height):
     x = int((xmin + xmax) * screen_width) // 2
     y = int((ymin + ymax) * screen_height) // 2
     return x, y
+
+
+def get_fused_window_by_id(fused_tree, window_id):
+    if fused_tree is None:
+        return None
+    windows = flatten_treeland_windows(fused_tree)
+    if window_id < 0 or window_id >= len(windows):
+        return None
+    return windows[window_id]
+
+
+def window_region_center(window, region):
+    geometry = window.get("geometry") or {}
+    win_x = float(geometry.get("x") or 0)
+    win_y = float(geometry.get("y") or 0)
+    win_width = float(geometry.get("width") or 0)
+    win_height = float(geometry.get("height") or 0)
+    if win_width <= 0 or win_height <= 0:
+        return None
+
+    titlebar = window.get("titlebarGeometry") or {}
+    titlebar_width = float(titlebar.get("width") or 0)
+    titlebar_height = float(titlebar.get("height") or 0)
+
+    if region == "titlebar":
+        if titlebar_width > 0 and titlebar_height > 0:
+            titlebar_x = win_x + float(titlebar.get("x") or 0)
+            titlebar_y = win_y + float(titlebar.get("y") or 0)
+            return int(titlebar_x + titlebar_width / 2), int(titlebar_y + titlebar_height / 2)
+        fallback_height = min(40.0, max(1.0, win_height * 0.1))
+        return int(win_x + win_width / 2), int(win_y + fallback_height / 2)
+
+    if region == "content":
+        content_y = win_y
+        content_height = win_height
+        if titlebar_width > 0 and titlebar_height > 0:
+            content_y += titlebar_height
+            content_height = max(1.0, win_height - titlebar_height)
+        return int(win_x + win_width / 2), int(content_y + content_height / 2)
+
+    if region == "center":
+        return int(win_x + win_width / 2), int(win_y + win_height / 2)
+
+    return None
 
 def mcp_autogui_main(mcp):
     omniparser_thread = None
@@ -144,8 +188,8 @@ def mcp_autogui_main(mcp):
                         f"windows {stats.get('window_count', 0)}",
                         file=sys.stderr,
                     )
-                    detail_text += '\nTreeland OmniParser fused window tree:\n'
-                    detail_text += json.dumps(fused_detail, ensure_ascii=False, indent=2)
+                    detail_text += '\nTreeland OmniParser action targets:\n'
+                    detail_text += json.dumps(build_action_targets(fused_detail), ensure_ascii=False, indent=2)
                 except Exception as exc:
                     fusion_error = f"{type(exc).__name__}: {exc}"
 
@@ -236,6 +280,69 @@ def mcp_autogui_main(mcp):
         compos = detail[id]['bbox']
         current_mouse_x, current_mouse_y = omniparser_bbox_center(compos, screen_width, screen_height)
         pyautogui.moveTo(current_mouse_x, current_mouse_y)
+        return True
+
+    @mcp.tool()
+    async def omniparser_click_window_region(
+        window_id: int,
+        region: str = 'titlebar',
+        button: str = 'left',
+        clicks: int = 1,
+    ) -> bool:
+        """Click a named region of a Treeland window from omniparser_details_on_screen.
+
+    Args:
+        window_id: The window_id shown in "Treeland OmniParser action targets".
+        region: 'titlebar', 'content', or 'center'.
+        button: Button to click. 'left', 'middle', or 'right'.
+        clicks: Number of clicks. 2 for double click.
+    Return value:
+        True is success. False means the window or region is not found.
+        """
+        nonlocal current_mouse_x, current_mouse_y
+        window = get_fused_window_by_id(fused_detail, window_id)
+        if window is None:
+            return False
+        center = window_region_center(window, region)
+        if center is None:
+            return False
+        current_mouse_x, current_mouse_y = center
+        pyautogui.click(x=current_mouse_x, y=current_mouse_y, button=button, clicks=clicks)
+        return True
+
+    @mcp.tool()
+    async def omniparser_drag_window_region(
+        window_id: int,
+        delta_x: int,
+        delta_y: int,
+        region: str = 'titlebar',
+        button: str = 'left',
+    ) -> bool:
+        """Drag a named region of a Treeland window by a relative pixel offset.
+
+    Args:
+        window_id: The window_id shown in "Treeland OmniParser action targets".
+        delta_x: Horizontal drag offset in pixels. Positive moves right.
+        delta_y: Vertical drag offset in pixels. Positive moves down.
+        region: Usually 'titlebar' for moving a window.
+        button: Button to hold while dragging. Usually 'left'.
+    Return value:
+        True is success. False means the window or region is not found.
+        """
+        nonlocal current_mouse_x, current_mouse_y
+        window = get_fused_window_by_id(fused_detail, window_id)
+        if window is None:
+            return False
+        center = window_region_center(window, region)
+        if center is None:
+            return False
+        from_x, from_y = center
+        to_x = from_x + delta_x
+        to_y = from_y + delta_y
+        pyautogui.moveTo(from_x, from_y)
+        pyautogui.dragTo(to_x, to_y, button=button)
+        current_mouse_x = to_x
+        current_mouse_y = to_y
         return True
 
     @mcp.tool()
